@@ -188,7 +188,10 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // Header Scroll Shadow Logic
   const siteHeader = document.getElementById('siteHeader');
+
   window.addEventListener('scroll', () => {
+    if (!siteHeader) return;
+
     if (window.scrollY > 40) {
       siteHeader.classList.add('scrolled');
     } else {
@@ -199,10 +202,17 @@ document.addEventListener('DOMContentLoaded', () => {
   // Mobile Navigation Drawer Toggle
   const mobileNavToggle = document.getElementById('mobileNavToggle');
   const mainNav = document.getElementById('mainNav');
+
   if (mobileNavToggle && mainNav) {
     mobileNavToggle.addEventListener('click', () => {
-      const isExpanded = mobileNavToggle.getAttribute('aria-expanded') === 'true';
-      mobileNavToggle.setAttribute('aria-expanded', (!isExpanded).toString());
+      const isExpanded =
+        mobileNavToggle.getAttribute('aria-expanded') === 'true';
+
+      mobileNavToggle.setAttribute(
+        'aria-expanded',
+        (!isExpanded).toString()
+      );
+
       mainNav.classList.toggle('active');
     });
 
@@ -215,16 +225,7 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // Handle Video Autoplay Fallback (browsers blocking autoplay)
-  const heroVideo = document.getElementById('heroVideo');
-  if (heroVideo) {
-    const playPromise = heroVideo.play();
-    if (playPromise !== undefined) {
-      playPromise.catch(error => {
-        console.log("Autoplay prevented or restricted by browser settings:", error);
-      });
-    }
-  }
+  // Hero is now a static image, so no video autoplay is needed.
 });
 
 /* ==========================================================================
@@ -232,6 +233,7 @@ document.addEventListener('DOMContentLoaded', () => {
    ========================================================================== */
 function toggleLanguage() {
   currentLang = currentLang === 'en' ? 'ar' : 'en';
+
   const langData = translations[currentLang];
 
   // Update HTML tag attributes (dir, lang)
@@ -246,22 +248,40 @@ function toggleLanguage() {
   const langNameLabel = document.getElementById('langNameLabel');
   const langToggleBtn = document.getElementById('langToggleBtn');
 
-  if (langCodeLabel) langCodeLabel.textContent = langData.meta.langCodeLabel;
-  if (langNameLabel) langNameLabel.textContent = langData.meta.langName;
-  if (langToggleBtn) langToggleBtn.setAttribute('aria-label', langData.meta.ariaToggle);
+  if (langCodeLabel) {
+    langCodeLabel.textContent = langData.meta.langCodeLabel;
+  }
+
+  if (langNameLabel) {
+    langNameLabel.textContent = langData.meta.langName;
+  }
+
+  if (langToggleBtn) {
+    langToggleBtn.setAttribute(
+      'aria-label',
+      langData.meta.ariaToggle
+    );
+  }
 
   // Update elements with data-i18n attributes
   const i18nElements = document.querySelectorAll('[data-i18n]');
+
   i18nElements.forEach(el => {
     const keyPath = el.getAttribute('data-i18n');
-    const translationValue = getNestedProperty(langData, keyPath);
+
+    const translationValue = getNestedProperty(
+      langData,
+      keyPath
+    );
+
     if (translationValue !== undefined) {
       el.textContent = translationValue;
     }
   });
 
-  // Specifically update Footer Credit Line (Required)
+  // Specifically update Footer Credit Line
   const creditLine = document.getElementById('creditLine');
+
   if (creditLine) {
     creditLine.textContent = langData.footer.credit;
   }
@@ -272,24 +292,28 @@ function toggleLanguage() {
  */
 function getNestedProperty(obj, path) {
   return path.split('.').reduce((prev, curr) => {
-    return prev && prev[curr] !== undefined ? prev[curr] : undefined;
+    return prev && prev[curr] !== undefined
+      ? prev[curr]
+      : undefined;
   }, obj);
 }
-// =========================================================
-// SCROLL IMAGE SEQUENCE — GSAP
-// =========================================================
 
-document.addEventListener("DOMContentLoaded", () => {
-  const canvas = document.getElementById("scrollCanvas");
-  const section = document.getElementById("scroll-video");
+/* ==========================================================================
+   4. SCROLL IMAGE SEQUENCE — GSAP
+   ========================================================================== */
+
+document.addEventListener('DOMContentLoaded', () => {
+  const canvas = document.getElementById('scrollCanvas');
+  const section = document.getElementById('scroll-video');
 
   if (!canvas || !section) return;
 
-  const ctx = canvas.getContext("2d");
+  const ctx = canvas.getContext('2d');
 
   const FRAME_COUNT = 240;
+
   const FRAME_PATH = (index) =>
-    `assets/scroll_frames/frame_${String(index + 1).padStart(4, "0")}.webp`;
+    `assets/scroll_frames/frame_${String(index + 1).padStart(4, '0')}.webp`;
 
   const images = new Array(FRAME_COUNT);
   const loaded = new Array(FRAME_COUNT).fill(false);
@@ -297,9 +321,9 @@ document.addEventListener("DOMContentLoaded", () => {
   let currentFrame = 0;
   let lastDrawnFrame = -1;
 
-  // ---------------------------------------------------------
-  // Canvas sizing
-  // ---------------------------------------------------------
+  /* ---------------------------------------------------------
+     Canvas sizing
+     --------------------------------------------------------- */
 
   function resizeCanvas() {
     const dpr = Math.min(window.devicePixelRatio || 1, 2);
@@ -307,20 +331,23 @@ document.addEventListener("DOMContentLoaded", () => {
     canvas.width = Math.floor(window.innerWidth * dpr);
     canvas.height = Math.floor(window.innerHeight * dpr);
 
-    canvas.style.width = "100%";
-    canvas.style.height = "100%";
+    canvas.style.width = '100%';
+    canvas.style.height = '100%';
 
     ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     drawFrame(currentFrame);
   }
 
-  // ---------------------------------------------------------
-  // Draw image with cover behavior
-  // ---------------------------------------------------------
+  /* ---------------------------------------------------------
+     Draw image with cover behavior
+     --------------------------------------------------------- */
 
   function drawFrame(index) {
-    index = Math.max(0, Math.min(FRAME_COUNT - 1, Math.round(index)));
+    index = Math.max(
+      0,
+      Math.min(FRAME_COUNT - 1, Math.round(index))
+    );
 
     const image = images[index];
 
@@ -337,8 +364,11 @@ document.addEventListener("DOMContentLoaded", () => {
     const canvasWidth = window.innerWidth;
     const canvasHeight = window.innerHeight;
 
-    const imageRatio = image.naturalWidth / image.naturalHeight;
-    const canvasRatio = canvasWidth / canvasHeight;
+    const imageRatio =
+      image.naturalWidth / image.naturalHeight;
+
+    const canvasRatio =
+      canvasWidth / canvasHeight;
 
     let drawWidth;
     let drawHeight;
@@ -359,7 +389,12 @@ document.addEventListener("DOMContentLoaded", () => {
       offsetY = (canvasHeight - drawHeight) / 2;
     }
 
-    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
+    ctx.clearRect(
+      0,
+      0,
+      canvasWidth,
+      canvasHeight
+    );
 
     ctx.drawImage(
       image,
@@ -370,55 +405,67 @@ document.addEventListener("DOMContentLoaded", () => {
     );
   }
 
-  // ---------------------------------------------------------
-  // Load one frame
-  // ---------------------------------------------------------
+  /* ---------------------------------------------------------
+     Load one frame
+     --------------------------------------------------------- */
 
   function loadFrame(index) {
-    if (index < 0 || index >= FRAME_COUNT) return;
-    if (images[index]) return;
+    if (
+      index < 0 ||
+      index >= FRAME_COUNT
+    ) {
+      return;
+    }
+
+    if (images[index]) {
+      return;
+    }
 
     const image = new Image();
 
-    image.decoding = "async";
+    image.decoding = 'async';
 
     image.onload = () => {
       images[index] = image;
       loaded[index] = true;
 
-      // Draw the first available frame immediately
+      // Draw first available frame immediately
       if (index === 0) {
         drawFrame(0);
       }
 
-      // If this is the frame currently needed by GSAP,
-      // draw it immediately.
+      // Draw the currently requested frame immediately
       if (index === Math.round(currentFrame)) {
         drawFrame(index);
       }
     };
 
     image.onerror = () => {
-      console.warn(`Failed to load frame ${index + 1}`);
+      console.warn(
+        `Failed to load frame ${index + 1}`
+      );
     };
 
     image.src = FRAME_PATH(index);
   }
 
-  // ---------------------------------------------------------
-  // Progressive loading
-  // ---------------------------------------------------------
+  /* ---------------------------------------------------------
+     Progressive loading
+     --------------------------------------------------------- */
 
   // Load first frames immediately
   for (let i = 0; i < 30; i++) {
     loadFrame(i);
   }
 
-  // Then load the remaining frames gradually
+  // Then load remaining frames gradually
   let nextBatch = 30;
 
   function loadNextBatch() {
-    const end = Math.min(nextBatch + 30, FRAME_COUNT);
+    const end = Math.min(
+      nextBatch + 30,
+      FRAME_COUNT
+    );
 
     for (let i = nextBatch; i < end; i++) {
       loadFrame(i);
@@ -433,9 +480,9 @@ document.addEventListener("DOMContentLoaded", () => {
 
   setTimeout(loadNextBatch, 100);
 
-  // ---------------------------------------------------------
-  // GSAP ScrollTrigger
-  // ---------------------------------------------------------
+  /* ---------------------------------------------------------
+     GSAP ScrollTrigger
+     --------------------------------------------------------- */
 
   gsap.registerPlugin(ScrollTrigger);
 
@@ -446,15 +493,19 @@ document.addEventListener("DOMContentLoaded", () => {
   gsap.to(playhead, {
     frame: FRAME_COUNT - 1,
 
-    ease: "none",
+    ease: 'none',
 
     scrollTrigger: {
       trigger: section,
 
-      start: "top top",
-      end: "bottom bottom",
+      start: 'top top',
 
-      scrub: 0.15,
+      // Sequence finishes slightly before the very end
+      // so the final frame does not feel stuck.
+      end: 'bottom 92%',
+
+      // Faster response to hand/finger movement
+      scrub: 0.04,
 
       invalidateOnRefresh: true
     },
@@ -468,18 +519,18 @@ document.addEventListener("DOMContentLoaded", () => {
     }
   });
 
-  // ---------------------------------------------------------
-  // Initial setup
-  // ---------------------------------------------------------
+  /* ---------------------------------------------------------
+     Initial setup
+     --------------------------------------------------------- */
 
   resizeCanvas();
 
-  window.addEventListener("resize", () => {
+  window.addEventListener('resize', () => {
     resizeCanvas();
     ScrollTrigger.refresh();
   });
 
-  // Make sure ScrollTrigger recalculates after loading begins
+  // Recalculate ScrollTrigger after loading begins
   setTimeout(() => {
     ScrollTrigger.refresh();
   }, 500);
