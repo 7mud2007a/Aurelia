@@ -276,126 +276,6 @@ function getNestedProperty(obj, path) {
   }, obj);
 }
 
-// =========================================================
-// SCROLL IMAGE SEQUENCE
-// =========================================================
-
-const scrollVideoSection = document.querySelector(
-  ".scroll-video-section"
-);
-
-const scrollCanvas = document.querySelector(
-  "#scrollCanvas"
-);
-
-const scrollContext = scrollCanvas
-  ? scrollCanvas.getContext("2d")
-  : null;
-
-const TOTAL_FRAMES = 240;
-const FRAME_PATH = "assets/scroll_frames/frame_";
-
-const scrollFrames = [];
-let loadedFrames = 0;
-let currentFrame = -1;
-let scrollImageFrame = null;
-
-if (scrollVideoSection && scrollCanvas && scrollContext) {
-
-  // ---------------------------------------------------------
-  // Canvas sizing
-  // ---------------------------------------------------------
-
-  function resizeScrollCanvas() {
-    const dpr = Math.min(window.devicePixelRatio || 1, 2);
-
-    const width = window.innerWidth;
-    const height = window.innerHeight;
-
-    scrollCanvas.width = Math.round(width * dpr);
-    scrollCanvas.height = Math.round(height * dpr);
-
-    scrollCanvas.style.width = width + "px";
-    scrollCanvas.style.height = height + "px";
-
-    scrollContext.setTransform(
-      dpr,
-      0,
-      0,
-      dpr,
-      0,
-      0
-    );
-
-    drawFrame(currentFrame >= 0 ? currentFrame : 0);
-  }
-
-  // ---------------------------------------------------------
-  // Draw frame
-  // ---------------------------------------------------------
-
-  function drawFrame(frameIndex) {
-
-    const image = scrollFrames[frameIndex];
-
-    if (!image || !image.complete) {
-      return;
-    }
-
-    const canvasWidth = window.innerWidth;
-    const canvasHeight = window.innerHeight;
-
-    const imageWidth = image.naturalWidth;
-    const imageHeight = image.naturalHeight;
-
-    if (!imageWidth || !imageHeight) {
-      return;
-    }
-
-    // Cover behavior — same visual idea as object-fit: cover
-    const scale = Math.max(
-      canvasWidth / imageWidth,
-      canvasHeight / imageHeight
-    );
-
-    const drawWidth = imageWidth * scale;
-    const drawHeight = imageHeight * scale;
-
-    const offsetX =
-      (canvasWidth - drawWidth) / 2;
-
-    const offsetY =
-      (canvasHeight - drawHeight) / 2;
-
-    scrollContext.clearRect(
-      0,
-      0,
-      canvasWidth,
-      canvasHeight
-    );
-
-    scrollContext.drawImage(
-      image,
-      offsetX,
-      offsetY,
-      drawWidth,
-      drawHeight
-    );
-  }
-
-  // ---------------------------------------------------------
-  // Load images
-  // ---------------------------------------------------------
-
-  function loadFrame(index) {
-
-    if (index >= TOTAL_FRAMES) {
-      return;
-    }
-
-    const image = new Image();
-
-    image.decoding = "async";
 
     image.onload = () => {
 
@@ -513,4 +393,256 @@ if (scrollVideoSection && scrollCanvas && scrollContext) {
 
   // Start loading frames
   loadFrame(0);
+}
+// =========================================================
+// SCROLL IMAGE SEQUENCE
+// =========================================================
+
+const scrollVideoSection = document.querySelector(
+  ".scroll-video-section"
+);
+
+const scrollCanvas = document.querySelector(
+  "#scrollCanvas"
+);
+
+const scrollContext = scrollCanvas
+  ? scrollCanvas.getContext("2d")
+  : null;
+
+const TOTAL_FRAMES = 240;
+const FRAME_PATH = "assets/scroll_frames/frame_";
+
+const scrollFrames = [];
+let currentFrame = 0;
+let scrollImageFrame = null;
+
+if (scrollVideoSection && scrollCanvas && scrollContext) {
+
+  // ---------------------------------------------------------
+  // Canvas
+  // ---------------------------------------------------------
+
+  function resizeScrollCanvas() {
+
+    const dpr = Math.min(
+      window.devicePixelRatio || 1,
+      2
+    );
+
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    scrollCanvas.width =
+      Math.round(width * dpr);
+
+    scrollCanvas.height =
+      Math.round(height * dpr);
+
+    scrollCanvas.style.width =
+      width + "px";
+
+    scrollCanvas.style.height =
+      height + "px";
+
+    scrollContext.setTransform(
+      dpr,
+      0,
+      0,
+      dpr,
+      0,
+      0
+    );
+
+    drawFrame(currentFrame);
+  }
+
+
+  // ---------------------------------------------------------
+  // Draw
+  // ---------------------------------------------------------
+
+  function drawFrame(frameIndex) {
+
+    const image =
+      scrollFrames[frameIndex];
+
+    if (!image) {
+      return;
+    }
+
+    const canvasWidth =
+      window.innerWidth;
+
+    const canvasHeight =
+      window.innerHeight;
+
+    const imageWidth =
+      image.naturalWidth;
+
+    const imageHeight =
+      image.naturalHeight;
+
+    if (!imageWidth || !imageHeight) {
+      return;
+    }
+
+    const scale = Math.max(
+      canvasWidth / imageWidth,
+      canvasHeight / imageHeight
+    );
+
+    const drawWidth =
+      imageWidth * scale;
+
+    const drawHeight =
+      imageHeight * scale;
+
+    const offsetX =
+      (canvasWidth - drawWidth) / 2;
+
+    const offsetY =
+      (canvasHeight - drawHeight) / 2;
+
+    scrollContext.clearRect(
+      0,
+      0,
+      canvasWidth,
+      canvasHeight
+    );
+
+    scrollContext.drawImage(
+      image,
+      offsetX,
+      offsetY,
+      drawWidth,
+      drawHeight
+    );
+  }
+
+
+  // ---------------------------------------------------------
+  // Load ALL frames
+  // ---------------------------------------------------------
+
+  for (let i = 0; i < TOTAL_FRAMES; i++) {
+
+    const image = new Image();
+
+    image.decoding = "async";
+
+    image.onload = () => {
+
+      scrollFrames[i] = image;
+
+      // Show first frame immediately
+      if (i === 0) {
+        currentFrame = 0;
+        drawFrame(0);
+      }
+    };
+
+    image.onerror = () => {
+
+      console.warn(
+        "Failed to load frame:",
+        i + 1
+      );
+
+    };
+
+    const frameNumber =
+      String(i + 1).padStart(4, "0");
+
+    image.src =
+      FRAME_PATH +
+      frameNumber +
+      ".webp";
+  }
+
+
+  // ---------------------------------------------------------
+  // Scroll → frame
+  // ---------------------------------------------------------
+
+  function updateScrollImage() {
+
+    const rect =
+      scrollVideoSection.getBoundingClientRect();
+
+    const scrollDistance =
+      scrollVideoSection.offsetHeight -
+      window.innerHeight;
+
+    if (scrollDistance <= 0) {
+      return;
+    }
+
+    let progress =
+      -rect.top / scrollDistance;
+
+    progress = Math.max(
+      0,
+      Math.min(1, progress)
+    );
+
+    const frameIndex = Math.min(
+      TOTAL_FRAMES - 1,
+      Math.floor(
+        progress * (TOTAL_FRAMES - 1)
+      )
+    );
+
+    if (
+      frameIndex !== currentFrame &&
+      scrollFrames[frameIndex]
+    ) {
+
+      currentFrame = frameIndex;
+
+      drawFrame(currentFrame);
+    }
+  }
+
+
+  // ---------------------------------------------------------
+  // Scroll listener
+  // ---------------------------------------------------------
+
+  window.addEventListener(
+    "scroll",
+    () => {
+
+      if (scrollImageFrame) {
+        return;
+      }
+
+      scrollImageFrame =
+        requestAnimationFrame(() => {
+
+          updateScrollImage();
+
+          scrollImageFrame = null;
+
+        });
+
+    },
+    { passive: true }
+  );
+
+
+  // ---------------------------------------------------------
+  // Resize
+  // ---------------------------------------------------------
+
+  window.addEventListener(
+    "resize",
+    resizeScrollCanvas,
+    { passive: true }
+  );
+
+
+  // Initial
+  resizeScrollCanvas();
+
 }
