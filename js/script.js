@@ -276,99 +276,92 @@ function getNestedProperty(obj, path) {
   }, obj);
 }
 // =========================================================
-// SCROLL IMAGE SEQUENCE
+// SCROLL IMAGE SEQUENCE — GSAP
 // =========================================================
 
-const scrollVideoSection = document.querySelector(
-  ".scroll-video-section"
-);
+document.addEventListener("DOMContentLoaded", () => {
+  const canvas = document.getElementById("scrollCanvas");
+  const section = document.getElementById("scroll-video");
 
-const scrollCanvas = document.querySelector(
-  "#scrollCanvas"
-);
+  if (!canvas || !section) return;
 
-const scrollContext = scrollCanvas
-  ? scrollCanvas.getContext("2d")
-  : null;
+  const ctx = canvas.getContext("2d");
 
-const TOTAL_FRAMES = 240;
-const FRAME_PATH = "assets/scroll_frames/frame_";
+  const FRAME_COUNT = 240;
+  const FRAME_PATH = (index) =>
+    `assets/scroll_frames/frame_${String(index + 1).padStart(4, "0")}.webp`;
 
-const scrollFrames = [];
-let currentFrame = 0;
-let scrollImageFrame = null;
+  const images = new Array(FRAME_COUNT);
+  const loaded = new Array(FRAME_COUNT).fill(false);
 
-if (scrollVideoSection && scrollCanvas && scrollContext) {
+  let currentFrame = 0;
+  let lastDrawnFrame = -1;
 
-  function resizeScrollCanvas() {
+  // ---------------------------------------------------------
+  // Canvas sizing
+  // ---------------------------------------------------------
 
-    const dpr = Math.min(
-      window.devicePixelRatio || 1,
-      2
-    );
+  function resizeCanvas() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
 
-    const width = window.innerWidth;
-    const height = window.innerHeight;
+    canvas.width = Math.floor(window.innerWidth * dpr);
+    canvas.height = Math.floor(window.innerHeight * dpr);
 
-    scrollCanvas.width = Math.round(width * dpr);
-    scrollCanvas.height = Math.round(height * dpr);
+    canvas.style.width = "100%";
+    canvas.style.height = "100%";
 
-    scrollCanvas.style.width = width + "px";
-    scrollCanvas.style.height = height + "px";
-
-    scrollContext.setTransform(
-      dpr,
-      0,
-      0,
-      dpr,
-      0,
-      0
-    );
+    ctx.setTransform(dpr, 0, 0, dpr, 0, 0);
 
     drawFrame(currentFrame);
   }
 
+  // ---------------------------------------------------------
+  // Draw image with cover behavior
+  // ---------------------------------------------------------
 
-  function drawFrame(frameIndex) {
+  function drawFrame(index) {
+    index = Math.max(0, Math.min(FRAME_COUNT - 1, Math.round(index)));
 
-    const image = scrollFrames[frameIndex];
+    const image = images[index];
 
-    if (!image) {
+    if (!image || !loaded[index]) {
       return;
     }
+
+    if (lastDrawnFrame === index) {
+      return;
+    }
+
+    lastDrawnFrame = index;
 
     const canvasWidth = window.innerWidth;
     const canvasHeight = window.innerHeight;
 
-    const imageWidth = image.naturalWidth;
-    const imageHeight = image.naturalHeight;
+    const imageRatio = image.naturalWidth / image.naturalHeight;
+    const canvasRatio = canvasWidth / canvasHeight;
 
-    if (!imageWidth || !imageHeight) {
-      return;
+    let drawWidth;
+    let drawHeight;
+    let offsetX;
+    let offsetY;
+
+    if (imageRatio > canvasRatio) {
+      drawHeight = canvasHeight;
+      drawWidth = drawHeight * imageRatio;
+
+      offsetX = (canvasWidth - drawWidth) / 2;
+      offsetY = 0;
+    } else {
+      drawWidth = canvasWidth;
+      drawHeight = drawWidth / imageRatio;
+
+      offsetX = 0;
+      offsetY = (canvasHeight - drawHeight) / 2;
     }
 
-    const scale = Math.max(
-      canvasWidth / imageWidth,
-      canvasHeight / imageHeight
-    );
+    ctx.clearRect(0, 0, canvasWidth, canvasHeight);
 
-    const drawWidth = imageWidth * scale;
-    const drawHeight = imageHeight * scale;
-
-    const offsetX =
-      (canvasWidth - drawWidth) / 2;
-
-    const offsetY =
-      (canvasHeight - drawHeight) / 2;
-
-    scrollContext.clearRect(
-      0,
-      0,
-      canvasWidth,
-      canvasHeight
-    );
-
-    scrollContext.drawImage(
+    ctx.drawImage(
       image,
       offsetX,
       offsetY,
@@ -377,111 +370,117 @@ if (scrollVideoSection && scrollCanvas && scrollContext) {
     );
   }
 
+  // ---------------------------------------------------------
+  // Load one frame
+  // ---------------------------------------------------------
 
-  // Load all frames
-  for (let i = 0; i < TOTAL_FRAMES; i++) {
+  function loadFrame(index) {
+    if (index < 0 || index >= FRAME_COUNT) return;
+    if (images[index]) return;
 
     const image = new Image();
 
     image.decoding = "async";
 
     image.onload = () => {
+      images[index] = image;
+      loaded[index] = true;
 
-      scrollFrames[i] = image;
-
-      if (i === 0) {
-        currentFrame = 0;
+      // Draw the first available frame immediately
+      if (index === 0) {
         drawFrame(0);
+      }
+
+      // If this is the frame currently needed by GSAP,
+      // draw it immediately.
+      if (index === Math.round(currentFrame)) {
+        drawFrame(index);
       }
     };
 
     image.onerror = () => {
-      console.warn(
-        "Failed to load frame:",
-        i + 1
-      );
+      console.warn(`Failed to load frame ${index + 1}`);
     };
 
-    const frameNumber =
-      String(i + 1).padStart(4, "0");
-
-    image.src =
-      FRAME_PATH +
-      frameNumber +
-      ".webp";
+    image.src = FRAME_PATH(index);
   }
 
+  // ---------------------------------------------------------
+  // Progressive loading
+  // ---------------------------------------------------------
 
-  // Scroll → frame
-  function updateScrollImage() {
+  // Load first frames immediately
+  for (let i = 0; i < 30; i++) {
+    loadFrame(i);
+  }
 
-    const rect =
-      scrollVideoSection.getBoundingClientRect();
+  // Then load the remaining frames gradually
+  let nextBatch = 30;
 
-    const scrollDistance =
-      scrollVideoSection.offsetHeight -
-      window.innerHeight;
+  function loadNextBatch() {
+    const end = Math.min(nextBatch + 30, FRAME_COUNT);
 
-    if (scrollDistance <= 0) {
-      return;
+    for (let i = nextBatch; i < end; i++) {
+      loadFrame(i);
     }
 
-    let progress =
-      -rect.top / scrollDistance;
+    nextBatch = end;
 
-    progress = Math.max(
-      0,
-      Math.min(1, progress)
-    );
-
-    const frameIndex = Math.min(
-      TOTAL_FRAMES - 1,
-      Math.floor(
-        progress * (TOTAL_FRAMES - 1)
-      )
-    );
-
-    if (scrollFrames[frameIndex]) {
-
-      currentFrame = frameIndex;
-
-      drawFrame(currentFrame);
+    if (nextBatch < FRAME_COUNT) {
+      setTimeout(loadNextBatch, 150);
     }
   }
 
+  setTimeout(loadNextBatch, 100);
 
-  // Scroll listener
-  window.addEventListener(
-    "scroll",
-    () => {
+  // ---------------------------------------------------------
+  // GSAP ScrollTrigger
+  // ---------------------------------------------------------
 
-      if (scrollImageFrame) {
-        return;
-      }
+  gsap.registerPlugin(ScrollTrigger);
 
-      scrollImageFrame =
-        requestAnimationFrame(() => {
+  const playhead = {
+    frame: 0
+  };
 
-          updateScrollImage();
+  gsap.to(playhead, {
+    frame: FRAME_COUNT - 1,
 
-          scrollImageFrame = null;
+    ease: "none",
 
-        });
+    scrollTrigger: {
+      trigger: section,
 
+      start: "top top",
+      end: "bottom bottom",
+
+      scrub: 0.15,
+
+      invalidateOnRefresh: true
     },
-    { passive: true }
-  );
 
+    onUpdate: () => {
+      currentFrame = playhead.frame;
 
-  // Resize
-  window.addEventListener(
-    "resize",
-    resizeScrollCanvas,
-    { passive: true }
-  );
+      const frameIndex = Math.round(currentFrame);
 
+      drawFrame(frameIndex);
+    }
+  });
 
+  // ---------------------------------------------------------
   // Initial setup
-  resizeScrollCanvas();
+  // ---------------------------------------------------------
 
-}
+  resizeCanvas();
+
+  window.addEventListener("resize", () => {
+    resizeCanvas();
+    ScrollTrigger.refresh();
+  });
+
+  // Make sure ScrollTrigger recalculates after loading begins
+  setTimeout(() => {
+    ScrollTrigger.refresh();
+  }, 500);
+});
