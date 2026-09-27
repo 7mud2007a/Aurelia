@@ -277,32 +277,164 @@ function getNestedProperty(obj, path) {
 }
 
 // =========================================================
-// SCROLL VIDEO
+// SCROLL IMAGE SEQUENCE
 // =========================================================
 
 const scrollVideoSection = document.querySelector(
   ".scroll-video-section"
 );
 
-const scrollVideo = document.querySelector(
-  "#scrollVideo"
+const scrollCanvas = document.querySelector(
+  "#scrollCanvas"
 );
 
-let scrollVideoReady = false;
-let scrollVideoFrame = null;
+const scrollContext = scrollCanvas
+  ? scrollCanvas.getContext("2d")
+  : null;
 
-if (scrollVideoSection && scrollVideo) {
+const TOTAL_FRAMES = 240;
+const FRAME_PATH = "assets/scroll_frames/frame_";
 
-  scrollVideo.addEventListener("loadedmetadata", () => {
-    scrollVideoReady = true;
-    updateScrollVideo();
-  });
+const scrollFrames = [];
+let loadedFrames = 0;
+let currentFrame = -1;
+let scrollImageFrame = null;
 
-  function updateScrollVideo() {
+if (scrollVideoSection && scrollCanvas && scrollContext) {
 
-    if (!scrollVideoReady) {
+  // ---------------------------------------------------------
+  // Canvas sizing
+  // ---------------------------------------------------------
+
+  function resizeScrollCanvas() {
+    const dpr = Math.min(window.devicePixelRatio || 1, 2);
+
+    const width = window.innerWidth;
+    const height = window.innerHeight;
+
+    scrollCanvas.width = Math.round(width * dpr);
+    scrollCanvas.height = Math.round(height * dpr);
+
+    scrollCanvas.style.width = width + "px";
+    scrollCanvas.style.height = height + "px";
+
+    scrollContext.setTransform(
+      dpr,
+      0,
+      0,
+      dpr,
+      0,
+      0
+    );
+
+    drawFrame(currentFrame >= 0 ? currentFrame : 0);
+  }
+
+  // ---------------------------------------------------------
+  // Draw frame
+  // ---------------------------------------------------------
+
+  function drawFrame(frameIndex) {
+
+    const image = scrollFrames[frameIndex];
+
+    if (!image || !image.complete) {
       return;
     }
+
+    const canvasWidth = window.innerWidth;
+    const canvasHeight = window.innerHeight;
+
+    const imageWidth = image.naturalWidth;
+    const imageHeight = image.naturalHeight;
+
+    if (!imageWidth || !imageHeight) {
+      return;
+    }
+
+    // Cover behavior — same visual idea as object-fit: cover
+    const scale = Math.max(
+      canvasWidth / imageWidth,
+      canvasHeight / imageHeight
+    );
+
+    const drawWidth = imageWidth * scale;
+    const drawHeight = imageHeight * scale;
+
+    const offsetX =
+      (canvasWidth - drawWidth) / 2;
+
+    const offsetY =
+      (canvasHeight - drawHeight) / 2;
+
+    scrollContext.clearRect(
+      0,
+      0,
+      canvasWidth,
+      canvasHeight
+    );
+
+    scrollContext.drawImage(
+      image,
+      offsetX,
+      offsetY,
+      drawWidth,
+      drawHeight
+    );
+  }
+
+  // ---------------------------------------------------------
+  // Load images
+  // ---------------------------------------------------------
+
+  function loadFrame(index) {
+
+    if (index >= TOTAL_FRAMES) {
+      return;
+    }
+
+    const image = new Image();
+
+    image.decoding = "async";
+
+    image.onload = () => {
+
+      scrollFrames[index] = image;
+      loadedFrames++;
+
+      if (index === 0) {
+        currentFrame = 0;
+        drawFrame(0);
+      }
+
+      // Load next frame
+      loadFrame(index + 1);
+    };
+
+    image.onerror = () => {
+      console.warn(
+        "Failed to load frame:",
+        index + 1
+      );
+
+      // Continue loading even if one frame fails
+      loadFrame(index + 1);
+    };
+
+    const frameNumber = String(index + 1)
+      .padStart(4, "0");
+
+    image.src =
+      FRAME_PATH +
+      frameNumber +
+      ".webp";
+  }
+
+  // ---------------------------------------------------------
+  // Scroll → frame
+  // ---------------------------------------------------------
+
+  function updateScrollImage() {
 
     const rect =
       scrollVideoSection.getBoundingClientRect();
@@ -323,30 +455,62 @@ if (scrollVideoSection && scrollVideo) {
       Math.min(1, progress)
     );
 
-    const targetTime =
-      progress * scrollVideo.duration;
+    const frameIndex = Math.min(
+      TOTAL_FRAMES - 1,
+      Math.floor(
+        progress * (TOTAL_FRAMES - 1)
+      )
+    );
 
-    scrollVideo.currentTime = targetTime;
+    if (
+      frameIndex !== currentFrame &&
+      scrollFrames[frameIndex]
+    ) {
+
+      currentFrame = frameIndex;
+
+      drawFrame(currentFrame);
+    }
   }
+
+  // ---------------------------------------------------------
+  // Scroll listener
+  // ---------------------------------------------------------
 
   window.addEventListener(
     "scroll",
     () => {
 
-      if (scrollVideoFrame) {
+      if (scrollImageFrame) {
         return;
       }
 
-      scrollVideoFrame =
+      scrollImageFrame =
         requestAnimationFrame(() => {
 
-          updateScrollVideo();
+          updateScrollImage();
 
-          scrollVideoFrame = null;
+          scrollImageFrame = null;
 
         });
 
     },
     { passive: true }
   );
+
+  // ---------------------------------------------------------
+  // Resize
+  // ---------------------------------------------------------
+
+  window.addEventListener(
+    "resize",
+    resizeScrollCanvas,
+    { passive: true }
+  );
+
+  // Initial setup
+  resizeScrollCanvas();
+
+  // Start loading frames
+  loadFrame(0);
 }
