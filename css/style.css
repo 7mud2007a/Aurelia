@@ -845,14 +845,8 @@ html[dir="rtl"] .footer-meta {
   .hero-video {
     display: none;
   }
-
-  .hero-fallback-img {
-    display: block;
-  }
-}
-
 /* =========================================================
-   SCROLL VIDEO
+   SCROLL IMAGE SEQUENCE
    ========================================================= */
 
 .scroll-video-section {
@@ -868,21 +862,15 @@ html[dir="rtl"] .footer-meta {
   width: 100%;
   height: 100vh;
 
-  display: flex;
-  align-items: center;
-  justify-content: center;
-
   overflow: hidden;
   background: #000;
 }
 
 .scroll-video {
-  width: 100%;
-  height: 100%;
-
   display: block;
 
-  object-fit: cover;
+  width: 100%;
+  height: 100%;
 
   pointer-events: none;
   user-select: none;
@@ -894,10 +882,6 @@ html[dir="rtl"] .footer-meta {
   .scroll-video-section {
     height: 300vh;
   }
-
-  .scroll-video {
-    object-fit: cover;
-  }
 }
 
 /* Accessibility */
@@ -906,3 +890,8 @@ html[dir="rtl"] .footer-meta {
     height: 100vh;
   }
 }
+  .hero-fallback-img {
+    display: block;
+  }
+}
+
