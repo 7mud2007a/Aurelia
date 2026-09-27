@@ -833,7 +833,10 @@ html[dir="rtl"] .footer-meta {
   }
 }
 
-/* Reduced Motion preference support */
+/* =========================================================
+   REDUCED MOTION
+   ========================================================= */
+
 @media (prefers-reduced-motion: reduce) {
   *, *::before, *::after {
     animation-duration: 0.01ms !important;
@@ -845,13 +848,15 @@ html[dir="rtl"] .footer-meta {
   .hero-video {
     display: none;
   }
+}
+
 /* =========================================================
    SCROLL IMAGE SEQUENCE
    ========================================================= */
 
 .scroll-video-section {
   position: relative;
-  height: 800vh;
+  height: 900vh;
   background: #000;
 }
 
@@ -864,6 +869,8 @@ html[dir="rtl"] .footer-meta {
 
   overflow: hidden;
   background: #000;
+
+  z-index: 1;
 }
 
 .scroll-video {
@@ -880,18 +887,13 @@ html[dir="rtl"] .footer-meta {
 /* Mobile */
 @media (max-width: 768px) {
   .scroll-video-section {
-    height: 300vh;
+    height: 900vh;
   }
 }
 
-/* Accessibility */
+/* Reduced motion */
 @media (prefers-reduced-motion: reduce) {
   .scroll-video-section {
     height: 100vh;
   }
 }
-  .hero-fallback-img {
-    display: block;
-  }
-}
-
