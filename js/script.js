@@ -275,3 +275,78 @@ function getNestedProperty(obj, path) {
     return prev && prev[curr] !== undefined ? prev[curr] : undefined;
   }, obj);
 }
+
+// =========================================================
+// SCROLL VIDEO
+// =========================================================
+
+const scrollVideoSection = document.querySelector(
+  ".scroll-video-section"
+);
+
+const scrollVideo = document.querySelector(
+  "#scrollVideo"
+);
+
+let scrollVideoReady = false;
+let scrollVideoFrame = null;
+
+if (scrollVideoSection && scrollVideo) {
+
+  scrollVideo.addEventListener("loadedmetadata", () => {
+    scrollVideoReady = true;
+    updateScrollVideo();
+  });
+
+  function updateScrollVideo() {
+
+    if (!scrollVideoReady) {
+      return;
+    }
+
+    const rect =
+      scrollVideoSection.getBoundingClientRect();
+
+    const scrollDistance =
+      scrollVideoSection.offsetHeight -
+      window.innerHeight;
+
+    if (scrollDistance <= 0) {
+      return;
+    }
+
+    let progress =
+      -rect.top / scrollDistance;
+
+    progress = Math.max(
+      0,
+      Math.min(1, progress)
+    );
+
+    const targetTime =
+      progress * scrollVideo.duration;
+
+    scrollVideo.currentTime = targetTime;
+  }
+
+  window.addEventListener(
+    "scroll",
+    () => {
+
+      if (scrollVideoFrame) {
+        return;
+      }
+
+      scrollVideoFrame =
+        requestAnimationFrame(() => {
+
+          updateScrollVideo();
+
+          scrollVideoFrame = null;
+
+        });
+
+    },
+    { passive: true }
+  );
+}
