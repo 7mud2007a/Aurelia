@@ -275,125 +275,6 @@ function getNestedProperty(obj, path) {
     return prev && prev[curr] !== undefined ? prev[curr] : undefined;
   }, obj);
 }
-
-
-    image.onload = () => {
-
-      scrollFrames[index] = image;
-      loadedFrames++;
-
-      if (index === 0) {
-        currentFrame = 0;
-        drawFrame(0);
-      }
-
-      // Load next frame
-      loadFrame(index + 1);
-    };
-
-    image.onerror = () => {
-      console.warn(
-        "Failed to load frame:",
-        index + 1
-      );
-
-      // Continue loading even if one frame fails
-      loadFrame(index + 1);
-    };
-
-    const frameNumber = String(index + 1)
-      .padStart(4, "0");
-
-    image.src =
-      FRAME_PATH +
-      frameNumber +
-      ".webp";
-  }
-
-  // ---------------------------------------------------------
-  // Scroll → frame
-  // ---------------------------------------------------------
-
-  function updateScrollImage() {
-
-    const rect =
-      scrollVideoSection.getBoundingClientRect();
-
-    const scrollDistance =
-      scrollVideoSection.offsetHeight -
-      window.innerHeight;
-
-    if (scrollDistance <= 0) {
-      return;
-    }
-
-    let progress =
-      -rect.top / scrollDistance;
-
-    progress = Math.max(
-      0,
-      Math.min(1, progress)
-    );
-
-    const frameIndex = Math.min(
-      TOTAL_FRAMES - 1,
-      Math.floor(
-        progress * (TOTAL_FRAMES - 1)
-      )
-    );
-
-    if (
-      frameIndex !== currentFrame &&
-      scrollFrames[frameIndex]
-    ) {
-
-      currentFrame = frameIndex;
-
-      drawFrame(currentFrame);
-    }
-  }
-
-  // ---------------------------------------------------------
-  // Scroll listener
-  // ---------------------------------------------------------
-
-  window.addEventListener(
-    "scroll",
-    () => {
-
-      if (scrollImageFrame) {
-        return;
-      }
-
-      scrollImageFrame =
-        requestAnimationFrame(() => {
-
-          updateScrollImage();
-
-          scrollImageFrame = null;
-
-        });
-
-    },
-    { passive: true }
-  );
-
-  // ---------------------------------------------------------
-  // Resize
-  // ---------------------------------------------------------
-
-  window.addEventListener(
-    "resize",
-    resizeScrollCanvas,
-    { passive: true }
-  );
-
-  // Initial setup
-  resizeScrollCanvas();
-
-  // Start loading frames
-  loadFrame(0);
-}
 // =========================================================
 // SCROLL IMAGE SEQUENCE
 // =========================================================
@@ -419,10 +300,6 @@ let scrollImageFrame = null;
 
 if (scrollVideoSection && scrollCanvas && scrollContext) {
 
-  // ---------------------------------------------------------
-  // Canvas
-  // ---------------------------------------------------------
-
   function resizeScrollCanvas() {
 
     const dpr = Math.min(
@@ -433,17 +310,11 @@ if (scrollVideoSection && scrollCanvas && scrollContext) {
     const width = window.innerWidth;
     const height = window.innerHeight;
 
-    scrollCanvas.width =
-      Math.round(width * dpr);
+    scrollCanvas.width = Math.round(width * dpr);
+    scrollCanvas.height = Math.round(height * dpr);
 
-    scrollCanvas.height =
-      Math.round(height * dpr);
-
-    scrollCanvas.style.width =
-      width + "px";
-
-    scrollCanvas.style.height =
-      height + "px";
+    scrollCanvas.style.width = width + "px";
+    scrollCanvas.style.height = height + "px";
 
     scrollContext.setTransform(
       dpr,
@@ -458,30 +329,19 @@ if (scrollVideoSection && scrollCanvas && scrollContext) {
   }
 
 
-  // ---------------------------------------------------------
-  // Draw
-  // ---------------------------------------------------------
-
   function drawFrame(frameIndex) {
 
-    const image =
-      scrollFrames[frameIndex];
+    const image = scrollFrames[frameIndex];
 
     if (!image) {
       return;
     }
 
-    const canvasWidth =
-      window.innerWidth;
+    const canvasWidth = window.innerWidth;
+    const canvasHeight = window.innerHeight;
 
-    const canvasHeight =
-      window.innerHeight;
-
-    const imageWidth =
-      image.naturalWidth;
-
-    const imageHeight =
-      image.naturalHeight;
+    const imageWidth = image.naturalWidth;
+    const imageHeight = image.naturalHeight;
 
     if (!imageWidth || !imageHeight) {
       return;
@@ -492,11 +352,8 @@ if (scrollVideoSection && scrollCanvas && scrollContext) {
       canvasHeight / imageHeight
     );
 
-    const drawWidth =
-      imageWidth * scale;
-
-    const drawHeight =
-      imageHeight * scale;
+    const drawWidth = imageWidth * scale;
+    const drawHeight = imageHeight * scale;
 
     const offsetX =
       (canvasWidth - drawWidth) / 2;
@@ -521,10 +378,7 @@ if (scrollVideoSection && scrollCanvas && scrollContext) {
   }
 
 
-  // ---------------------------------------------------------
-  // Load ALL frames
-  // ---------------------------------------------------------
-
+  // Load all frames
   for (let i = 0; i < TOTAL_FRAMES; i++) {
 
     const image = new Image();
@@ -535,7 +389,6 @@ if (scrollVideoSection && scrollCanvas && scrollContext) {
 
       scrollFrames[i] = image;
 
-      // Show first frame immediately
       if (i === 0) {
         currentFrame = 0;
         drawFrame(0);
@@ -543,12 +396,10 @@ if (scrollVideoSection && scrollCanvas && scrollContext) {
     };
 
     image.onerror = () => {
-
       console.warn(
         "Failed to load frame:",
         i + 1
       );
-
     };
 
     const frameNumber =
@@ -561,10 +412,7 @@ if (scrollVideoSection && scrollCanvas && scrollContext) {
   }
 
 
-  // ---------------------------------------------------------
   // Scroll → frame
-  // ---------------------------------------------------------
-
   function updateScrollImage() {
 
     const rect =
@@ -593,10 +441,7 @@ if (scrollVideoSection && scrollCanvas && scrollContext) {
       )
     );
 
-    if (
-      frameIndex !== currentFrame &&
-      scrollFrames[frameIndex]
-    ) {
+    if (scrollFrames[frameIndex]) {
 
       currentFrame = frameIndex;
 
@@ -605,10 +450,7 @@ if (scrollVideoSection && scrollCanvas && scrollContext) {
   }
 
 
-  // ---------------------------------------------------------
   // Scroll listener
-  // ---------------------------------------------------------
-
   window.addEventListener(
     "scroll",
     () => {
@@ -631,10 +473,7 @@ if (scrollVideoSection && scrollCanvas && scrollContext) {
   );
 
 
-  // ---------------------------------------------------------
   // Resize
-  // ---------------------------------------------------------
-
   window.addEventListener(
     "resize",
     resizeScrollCanvas,
@@ -642,7 +481,7 @@ if (scrollVideoSection && scrollCanvas && scrollContext) {
   );
 
 
-  // Initial
+  // Initial setup
   resizeScrollCanvas();
 
 }
